@@ -171,17 +171,26 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
 .login-tab{flex:1;padding:8px;background:transparent;border:none;color:#6b6660;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;transition:all .15s;}
 .login-tab.active{background:var(--accent);color:#fff;}
 .login-err{font-size:11px;color:var(--accent);margin-top:-8px;margin-bottom:12px;min-height:16px;}
+#nome-row{display:none;}
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);padding:0 40px;height:52px;display:flex;align-items:center;justify-content:flex-end;gap:12px;}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;letter-spacing:.5px;}
+.avatar-menu{position:absolute;top:52px;right:40px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;min-width:180px;box-shadow:0 4px 20px rgba(0,0,0,.1);display:none;z-index:100;}
+.avatar-menu.open{display:block;}
+.avatar-name{font-size:12px;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--border);margin-bottom:4px;color:var(--ink);}
+.avatar-email{font-size:10px;color:var(--muted);padding:0 10px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;}
 </style>
 </head>
 <body>
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">MED-OBRA</div>
+    <div class="login-logo">MEDOBRA</div>
     <div class="login-sub">Controle de Medições</div>
     <div class="login-tabs">
       <button class="login-tab active" onclick="loginTab('entrar',this)">Entrar</button>
       <button class="login-tab" onclick="loginTab('cadastrar',this)">Cadastrar</button>
     </div>
+    <div class="fg" id="nome-row"><label>Nome completo</label><input type="text" id="l-nome" placeholder="Ex: Caio Lamark"></div>
     <div class="fg"><label>Email</label><input type="email" id="l-email" placeholder="seu@email.com"></div>
     <div class="fg"><label>Senha</label><input type="password" id="l-senha" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAction()"></div>
     <div class="login-err" id="login-err"></div>
@@ -202,9 +211,19 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       <div class="nav-item" onclick="navTo('historico',this)"><span class="ico">📅</span> Histórico</div>
       <div class="nav-item" onclick="navTo('comparativo',this)"><span class="ico">📊</span> Comparativo</div>
     </nav>
-    <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px"><div style="font-size:10px;color:#6b6660;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="user-email-lbl"></div><button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;border-color:#3a3630;color:#8c8680" onclick="logout()">Sair</button></div>
+    <div class="sidebar-footer">MedObra</div>
   </div>
   <div class="content">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div style="font-size:11px;color:var(--muted)" id="topbar-nome"></div>
+      <div class="avatar" id="avatar-btn" onclick="toggleAvatarMenu()"></div>
+      <div class="avatar-menu" id="avatar-menu">
+        <div class="avatar-name" id="menu-nome"></div>
+        <div class="avatar-email" id="menu-email"></div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="logout()">Sair</button>
+      </div>
+    </div>
 
     <!-- OBRAS -->
     <div id="pg-obras" class="page active">
@@ -371,20 +390,41 @@ async function dbDelete(table, id){
 //  AUTH
 // ═══════════════════════════════════════════
 let loginMode = 'entrar';
+let currentUser = null;
+
 function loginTab(mode, btn){
   loginMode = mode;
   document.querySelectorAll('.login-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('login-btn-txt').textContent = mode==='entrar'?'Entrar':'Criar conta';
   document.getElementById('login-err').textContent='';
+  document.getElementById('nome-row').style.display = mode==='cadastrar'?'flex':'none';
+}
+
+function toggleAvatarMenu(){
+  document.getElementById('avatar-menu').classList.toggle('open');
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#avatar-btn')&&!e.target.closest('#avatar-menu'))
+    document.getElementById('avatar-menu')?.classList.remove('open');
+});
+
+function setUserUI(nome, email){
+  const initials = nome ? nome.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase() : email[0].toUpperCase();
+  document.getElementById('avatar-btn').textContent = initials;
+  document.getElementById('topbar-nome').textContent = nome || email;
+  document.getElementById('menu-nome').textContent = nome || '';
+  document.getElementById('menu-email').textContent = email;
 }
 
 async function loginAction(){
   const email = document.getElementById('l-email').value.trim();
   const senha = document.getElementById('l-senha').value;
+  const nome = document.getElementById('l-nome').value.trim();
   const errEl = document.getElementById('login-err');
-  errEl.textContent='';
+  errEl.textContent=''; errEl.style.color='var(--accent)';
   if(!email||!senha){errEl.textContent='Preencha email e senha.';return;}
+  if(loginMode==='cadastrar'&&!nome){errEl.textContent='Informe seu nome.';return;}
 
   const endpoint = loginMode==='entrar'
     ? `${SUPA_URL}/auth/v1/token?grant_type=password`
@@ -399,14 +439,31 @@ async function loginAction(){
 
   if(data.access_token){
     authToken = data.access_token;
-    const userEmail = data.user?.email || email;
-    document.getElementById('user-email-lbl').textContent = userEmail;
+    currentUser = data.user;
+    // Buscar perfil
+    const perfil = await dbGet('perfis', `id=eq.${data.user.id}`);
+    const nomeReal = perfil?.[0]?.nome || email;
+    setUserUI(nomeReal, email);
     document.getElementById('login-screen').style.display='none';
     await loadAll();
     renderObras();
-  } else if(loginMode==='cadastrar' && data.id){
-    errEl.style.color='var(--accent2)';
-    errEl.textContent='Conta criada! Verifique seu email para confirmar.';
+  } else if(loginMode==='cadastrar' && (data.id || data.user?.id)){
+    // Salvar perfil com nome
+    const userId = data.id || data.user?.id;
+    const token = data.access_token;
+    if(token && userId){
+      authToken = token;
+      await dbPost('perfis', {id: userId, nome});
+      currentUser = data.user || data;
+      setUserUI(nome, email);
+      document.getElementById('login-screen').style.display='none';
+      await loadAll();
+      renderObras();
+    } else {
+      errEl.style.color='var(--accent2)';
+      errEl.textContent='Conta criada! Faça login para continuar.';
+      loginTab('entrar', document.querySelectorAll('.login-tab')[0]);
+    }
   } else {
     errEl.textContent = data.error_description || data.msg || 'Email ou senha incorretos.';
   }
@@ -417,11 +474,13 @@ async function logout(){
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+authToken}
   });
-  authToken=null;
+  authToken=null; currentUser=null;
   db={obras:[],medicoes:[]};
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('l-senha').value='';
   document.getElementById('login-err').textContent='';
+  document.getElementById('avatar-menu').classList.remove('open');
+  loginTab('entrar', document.querySelectorAll('.login-tab')[0]);
 }
 
 // ═══════════════════════════════════════════
