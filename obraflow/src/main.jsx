@@ -1,3 +1,5 @@
+// No topo do arquivo main.jsx ou App.jsx
+document.title = 'ObraFlow';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
