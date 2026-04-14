@@ -1,3 +1,5 @@
+import logoImg from '../assets/logo.png';
+
 export function Sidebar({ activePage, onNav }) {
   const items = [
     { id: 'obras',       icon: '🏗', label: 'Obras' },
@@ -17,7 +19,7 @@ export function Sidebar({ activePage, onNav }) {
         gap: '4px'
       }}>
         <img
-          src="/src/assets/logo.png"
+          src={logoImg}
           alt="ObraFlow"
           style={{ width: '150px', height: 'auto', display: 'block' }}
         />
