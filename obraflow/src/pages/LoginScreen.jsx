@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import logoImg from '../assets/logo.png'
 
 export function LoginScreen({ onLogin }) {
   const [modo, setModo] = useState('entrar')
@@ -37,7 +38,18 @@ export function LoginScreen({ onLogin }) {
   return (
     <div id="login-screen">
       <div className="login-box">
-        <div className="login-logo">ObraFlow</div>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          marginBottom: '20px' 
+        }}>
+          <img
+            src={logoImg}
+            alt="ObraFlow"
+            style={{ width: '180px', height: 'auto', display: 'block' }}
+          />
+        </div>
         <div className="login-sub">Controle de Medições</div>
 
         <div className="login-tabs">
