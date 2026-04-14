@@ -50,7 +50,6 @@ export function LoginScreen({ onLogin }) {
             style={{ width: '180px', height: 'auto', display: 'block' }}
           />
         </div>
-        <div className="login-sub">Controle de Medições</div>
 
         <div className="login-tabs">
           <button className={`login-tab${modo === 'entrar' ? ' active' : ''}`}
