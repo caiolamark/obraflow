@@ -7,6 +7,7 @@ import { DetalheObra } from './pages/DetalheObra'
 import { Medicao } from './pages/Medicao'
 import { Historico } from './pages/Historico'
 import { Comparativo } from './pages/Comparativo'
+import { ResumoObra } from './pages/ResumoObra'
 import { AppProvider } from './context/AppContext'
 
 const STYLES = `
@@ -222,8 +223,6 @@ function ModalPerfil({ sessao, onClose }) {
   return (
     <div className="modal-bg" onClick={onClose} style={{ zIndex: 500 }}>
       <div className="modal perfil-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', width: '90%' }}>
-
-        {/* Foto */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div className="foto-upload-area" onClick={() => fileRef.current.click()}>
             {fotoUrl
@@ -335,6 +334,7 @@ function AppInner() {
             {page === 'medicao'     && <Medicao onNav={navegar} />}
             {page === 'historico'   && <Historico />}
             {page === 'comparativo' && <Comparativo />}
+            {page === 'resumo'      && <ResumoObra />}
             {transitioning && <ConstructionLoader fading={fadingOut} />}
           </div>
         </div>
