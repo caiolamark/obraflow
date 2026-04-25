@@ -133,14 +133,15 @@ export function Obras({ onNav }) {
     setModalAberto(false)
   }
 
-  // Logo preview dentro do modal
   const logoAtual = obraEditando ? logos[obraEditando.id] : null
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
         <div>
-          <div className="pg-title">Obras</div>
+          <div className="pg-title" style={{ fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase' }}>
+            OBRAS
+          </div>
           <div className="pg-sub">
             {obras.length === 0 ? 'Nenhuma obra cadastrada'
               : `${obras.length} obra${obras.length > 1 ? 's' : ''} cadastrada${obras.length > 1 ? 's' : ''}`}
@@ -199,7 +200,9 @@ export function Obras({ onNav }) {
 
                   {/* Nome e badges */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{ margin: '0 0 6px', fontSize: '17px', fontWeight: 700 }}>{obra.nome}</h3>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '17px', fontWeight: 700, textTransform: 'uppercase' }}>
+                      {obra.nome.toUpperCase()}
+                    </h3>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{
                         background: `${cor}22`, color: cor,
@@ -266,7 +269,6 @@ export function Obras({ onNav }) {
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '460px', width: '100%' }}>
             <h3 style={{ marginBottom: '20px' }}>{obraEditando ? 'Editar Obra' : 'Nova Obra'}</h3>
 
-            {/* Upload de logo — só no modo editar */}
             {obraEditando && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', padding: '14px', background: 'var(--surface)', borderRadius: '10px' }}>
                 <div style={{

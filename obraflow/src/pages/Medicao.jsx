@@ -116,7 +116,6 @@ export function Medicao({ onNav }) {
   const resultado = step === 4 ? calcResultado() : null
   const steps = ['Obra & Mês', 'Pacotes', 'Percentuais', 'Resultado']
 
-  // Sem obra selecionada
   if (!obraAtiva) return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
       <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗</div>
@@ -144,7 +143,11 @@ export function Medicao({ onNav }) {
       )}
 
       <div className="pg-head">
-        <div><div className="pg-title">Nova Medição</div></div>
+        <div>
+          <div className="pg-title" style={{ fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase' }}>
+            NOVA MEDIÇÃO
+          </div>
+        </div>
       </div>
 
       {/* Banner da obra ativa */}
@@ -157,7 +160,7 @@ export function Medicao({ onNav }) {
         <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '1px' }}>OBRA SELECIONADA</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{obraAtiva.nome}</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{obraAtiva.nome.toUpperCase()}</div>
         </div>
         {obraAtiva.orcamento > 0 && (
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>

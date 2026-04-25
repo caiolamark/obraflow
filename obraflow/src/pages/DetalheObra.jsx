@@ -77,10 +77,10 @@ export function DetalheObra({ onNav }) {
         <div>
           <div style={{ fontSize: '12px', marginBottom: '4px' }}>
             <span style={{ color: 'var(--accent)', cursor: 'pointer' }} onClick={() => onNav('obras')}>Obras</span>
-            {' › '}{obraAtiva.nome}
+            {' › '}{obraAtiva.nome.toUpperCase()}
           </div>
           <div className="pg-title" style={{ fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase' }}>
-            {obraAtiva.nome}
+            {obraAtiva.nome.toUpperCase()}
           </div>
           <div style={{ fontSize: '13px', opacity: 0.6, marginTop: '4px' }}>
             Orçamento base: {fmt(obraAtiva.orcamento)}

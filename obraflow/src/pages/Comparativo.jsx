@@ -28,7 +28,7 @@ function BannerObra({ obraAtiva, onTrocar }) {
       <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
       <div>
         <div style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '1px' }}>OBRA SELECIONADA</div>
-        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{obraAtiva.nome}</div>
+        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{obraAtiva.nome.toUpperCase()}</div>
       </div>
       {obraAtiva.orcamento > 0 && (
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
