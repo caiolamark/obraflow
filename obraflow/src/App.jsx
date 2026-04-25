@@ -332,9 +332,9 @@ function AppInner() {
             {page === 'obras'       && <Obras onNav={navegar} />}
             {page === 'detalhe'     && <DetalheObra onNav={navegar} />}
             {page === 'medicao'     && <Medicao onNav={navegar} />}
-            {page === 'historico'   && <Historico />}
-            {page === 'comparativo' && <Comparativo />}
-            {page === 'resumo'      && <ResumoObra />}
+            {page === 'historico'   && <Historico onNav={navegar} />}
+            {page === 'comparativo' && <Comparativo onNav={navegar} />}
+            {page === 'resumo'      && <ResumoObra onNav={navegar} />}
             {transitioning && <ConstructionLoader fading={fadingOut} />}
           </div>
         </div>

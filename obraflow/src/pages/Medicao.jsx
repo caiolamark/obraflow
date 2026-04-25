@@ -16,8 +16,6 @@ function fmtMes(m) {
 export function Medicao({ onNav }) {
   const { obraAtiva } = useApp()
   const [step, setStep] = useState(1)
-  const [obras, setObras] = useState([])
-  const [obraId, setObraId] = useState(obraAtiva?.id || '')
   const [mes, setMes] = useState(new Date().toISOString().slice(0,7))
   const [pacotes, setPacotes] = useState([])
   const [selecionados, setSelecionados] = useState([])
@@ -26,22 +24,17 @@ export function Medicao({ onNav }) {
   const [salvando, setSalvando] = useState(false)
 
   useEffect(() => {
-    supabase.from('obras').select('*').then(({ data }) => setObras(data || []))
-  }, [])
-
-  useEffect(() => {
-    if (obraId) carregarPacotes()
-  }, [obraId])
+    if (obraAtiva?.id) carregarPacotes()
+  }, [obraAtiva])
 
   async function carregarPacotes() {
     const { data } = await supabase
-      .from('pacotes').select('*, pavimentos(*)').eq('obra_id', obraId)
+      .from('pacotes').select('*, pavimentos(*)').eq('obra_id', obraAtiva.id)
     setPacotes(data || [])
   }
 
   async function irStep3() {
     if (!selecionados.length) return alert('Selecione ao menos um pacote')
-    // Busca acumulado anterior
     const { data: medsAnt } = await supabase
       .from('medicao_detalhes')
       .select('pac_id, pav_nome, pct')
@@ -89,8 +82,7 @@ export function Medicao({ onNav }) {
       catMap[pac.categoria].val += valPac
       catMap[pac.categoria].orc += (pac.valor_total || 0)
     })
-    const obra = obras.find(o => o.id === obraId)
-    const pctMes = obra?.orcamento > 0 ? (totalMes / obra.orcamento) * 100 : 0
+    const pctMes = obraAtiva?.orcamento > 0 ? (totalMes / obraAtiva.orcamento) * 100 : 0
     return { totalMes, pctMes, catMap, detalhes }
   }
 
@@ -99,7 +91,7 @@ export function Medicao({ onNav }) {
     const { totalMes, pctMes, detalhes } = calcResultado()
 
     const { data: med, error: errMed } = await supabase.from('medicoes').insert([{
-      obra_id: obraId, mes, pct_mes: pctMes, total_mes: totalMes,
+      obra_id: obraAtiva.id, mes, pct_mes: pctMes, total_mes: totalMes,
     }]).select()
 
     if (errMed) { alert('Erro: ' + errMed.message); setSalvando(false); return }
@@ -124,9 +116,24 @@ export function Medicao({ onNav }) {
   const resultado = step === 4 ? calcResultado() : null
   const steps = ['Obra & Mês', 'Pacotes', 'Percentuais', 'Resultado']
 
+  // Sem obra selecionada
+  if (!obraAtiva) return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗</div>
+      <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', color: 'var(--text)' }}>
+        Nenhuma obra selecionada
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '24px' }}>
+        Vá até a aba Obras, abra a obra desejada e volte aqui para medir.
+      </div>
+      <button className="btn btn-primary" onClick={() => onNav('obras')}>
+        → Ir para Obras
+      </button>
+    </div>
+  )
+
   return (
     <div>
-      {/* Toast/Loading */}
       {salvando && (
         <div style={{position:'fixed',inset:0,background:'rgba(26,24,20,.6)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(3px)'}}>
           <div style={{background:'var(--surface,#fff)',border:'1px solid var(--border)',borderRadius:'8px',padding:'32px 48px',display:'flex',flexDirection:'column',alignItems:'center',gap:'12px'}}>
@@ -138,6 +145,29 @@ export function Medicao({ onNav }) {
 
       <div className="pg-head">
         <div><div className="pg-title">Nova Medição</div></div>
+      </div>
+
+      {/* Banner da obra ativa */}
+      <div style={{
+        background: 'var(--surface2)', borderRadius: '10px',
+        padding: '12px 20px', marginBottom: '20px',
+        display: 'flex', alignItems: 'center', gap: '12px',
+        border: '1px solid var(--border)'
+      }}>
+        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '1px' }}>OBRA SELECIONADA</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{obraAtiva.nome}</div>
+        </div>
+        {obraAtiva.orcamento > 0 && (
+          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '1px' }}>ORÇAMENTO</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent)' }}>{fmt(obraAtiva.orcamento)}</div>
+          </div>
+        )}
+        <button className="btn btn-ghost btn-sm" onClick={() => onNav('obras')} style={{ marginLeft: '8px', fontSize: '11px' }}>
+          Trocar obra
+        </button>
       </div>
 
       {/* Step indicator */}
@@ -153,22 +183,13 @@ export function Medicao({ onNav }) {
       {step === 1 && (
         <div>
           <div className="card">
-            <div className="form-row">
-              <div className="fg" style={{margin:0}}>
-                <label>Obra</label>
-                <select value={obraId} onChange={e => setObraId(e.target.value)}>
-                  <option value="">Selecione...</option>
-                  {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-                </select>
-              </div>
-              <div className="fg" style={{margin:0}}>
-                <label>Mês de Referência</label>
-                <input type="month" value={mes} onChange={e => setMes(e.target.value)} />
-              </div>
+            <div className="fg" style={{margin:0}}>
+              <label>Mês de Referência</label>
+              <input type="month" value={mes} onChange={e => setMes(e.target.value)} />
             </div>
           </div>
           <div style={{display:'flex',justifyContent:'flex-end',marginTop:'14px'}}>
-            <button className="btn btn-primary" onClick={() => setStep(2)} disabled={!obraId}>Próximo →</button>
+            <button className="btn btn-primary" onClick={() => setStep(2)}>Próximo →</button>
           </div>
         </div>
       )}
@@ -276,8 +297,6 @@ export function Medicao({ onNav }) {
       {/* STEP 4 */}
       {step === 4 && resultado && (() => {
         const { totalMes, pctMes, catMap, detalhes } = resultado
-        const obra = obras.find(o => o.id === obraId)
-        // acumulado antes desta medição
         return (
           <div>
             <div className="resultado-box">

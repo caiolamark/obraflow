@@ -6,7 +6,7 @@ export function Sidebar({ activePage, onNav }) {
     { id: 'medicao',     icon: '📋', label: 'Nova Medição' },
     { id: 'historico',   icon: '📅', label: 'Histórico' },
     { id: 'comparativo', icon: '📊', label: 'Comparativo' },
-    { id: 'resumo',      icon: '📊', label: 'Resumo de Obra' },
+    { id: 'resumo',      icon: '📈', label: 'Resumo de Obra' },
   ]
 
   return (

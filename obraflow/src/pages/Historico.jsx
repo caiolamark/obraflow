@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useApp } from '../context/AppContext'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 const CATEGORIAS = ['Diretos Civil', 'Diretos Instalações', 'Indiretos']
@@ -20,31 +21,50 @@ function fmtMes(mes) {
   return `${nomes[parseInt(m)-1]}/${ano}`
 }
 
-export function Historico() {
-  const [obras, setObras] = useState([])
-  const [obraId, setObraId] = useState('')
+function BannerObra({ obraAtiva, onTrocar }) {
+  if (!obraAtiva) return null
+  return (
+    <div style={{
+      background: 'var(--surface2)', borderRadius: '10px',
+      padding: '12px 20px', marginBottom: '20px',
+      display: 'flex', alignItems: 'center', gap: '12px',
+      border: '1px solid var(--border)'
+    }}>
+      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+      <div>
+        <div style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '1px' }}>OBRA SELECIONADA</div>
+        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>{obraAtiva.nome}</div>
+      </div>
+      {obraAtiva.orcamento > 0 && (
+        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+          <div style={{ fontSize: '10px', color: 'var(--muted)', letterSpacing: '1px' }}>ORÇAMENTO</div>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--accent)' }}>{fmt(obraAtiva.orcamento)}</div>
+        </div>
+      )}
+      <button className="btn btn-ghost btn-sm" onClick={onTrocar} style={{ marginLeft: '8px', fontSize: '11px' }}>
+        Trocar obra
+      </button>
+    </div>
+  )
+}
+
+export function Historico({ onNav }) {
+  const { obraAtiva } = useApp()
   const [medicoes, setMedicoes] = useState([])
   const [expandido, setExpandido] = useState(null)
   const [detalhes, setDetalhes] = useState({})
   const [pacotes, setPacotes] = useState([])
 
   useEffect(() => {
-    supabase.from('obras').select('*').then(({ data }) => {
-      setObras(data || [])
-      if (data?.[0]) setObraId(data[0].id)
-    })
-  }, [])
-
-  useEffect(() => {
-    if (!obraId) return
-    supabase.from('pacotes').select('id, nome, categoria, valor_total').eq('obra_id', obraId)
+    if (!obraAtiva?.id) return
+    supabase.from('pacotes').select('id, nome, categoria, valor_total').eq('obra_id', obraAtiva.id)
       .then(({ data }) => setPacotes(data || []))
     carregarMedicoes()
-  }, [obraId])
+  }, [obraAtiva])
 
   async function carregarMedicoes() {
     const { data } = await supabase
-      .from('medicoes').select('*').eq('obra_id', obraId).order('mes', { ascending: true })
+      .from('medicoes').select('*').eq('obra_id', obraAtiva.id).order('mes', { ascending: true })
     setMedicoes(data || [])
   }
 
@@ -100,19 +120,26 @@ export function Historico() {
     )
   }
 
+  if (!obraAtiva) return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+      <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', color: 'var(--text)' }}>
+        Nenhuma obra selecionada
+      </div>
+      <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '24px' }}>
+        Vá até a aba Obras, abra a obra desejada e volte aqui para ver o histórico.
+      </div>
+      <button className="btn btn-primary" onClick={() => onNav('obras')}>→ Ir para Obras</button>
+    </div>
+  )
+
   return (
     <div>
-      <div className="pg-title" style={{ fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '24px' }}>
+      <div className="pg-title" style={{ fontSize: '2rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '16px' }}>
         Histórico
       </div>
 
-      <div className="card" style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', opacity: 0.5, marginBottom: '8px', textTransform: 'uppercase' }}>Obra</div>
-        <select value={obraId} onChange={e => setObraId(e.target.value)}
-          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', fontFamily: 'inherit', fontSize: '14px' }}>
-          {obras.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
-        </select>
-      </div>
+      <BannerObra obraAtiva={obraAtiva} onTrocar={() => onNav('obras')} />
 
       {medicoesComAcum.length === 0 ? (
         <div className="empty-state">
@@ -127,7 +154,6 @@ export function Historico() {
 
           return (
             <div key={med.id} className="card" style={{ marginBottom: '8px', padding: 0 }}>
-              {/* Cabeçalho */}
               <div onClick={() => toggleExpandir(med)}
                 style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer' }}>
                 <span style={{ background: 'var(--border)', borderRadius: '4px', padding: '3px 8px', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>
@@ -143,7 +169,6 @@ export function Historico() {
                 <span style={{ marginLeft: 'auto', opacity: 0.4 }}>{expandido === med.id ? '▲' : '▼'}</span>
               </div>
 
-              {/* Expandido */}
               {expandido === med.id && (
                 <div style={{ borderTop: '1px solid var(--border)', padding: '16px' }}>
                   {pacotesAgrupados.length === 0 ? (
@@ -152,25 +177,14 @@ export function Historico() {
                     </div>
                   ) : (
                     <>
-                      {/* Gráfico de colunas por pacote */}
                       <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', opacity: 0.5, marginBottom: '12px', textTransform: 'uppercase' }}>
                         % Medido por Pacote
                       </div>
                       <div style={{ width: '100%', height: 220, marginBottom: '24px' }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 40 }}>
-                            <XAxis
-                              dataKey="nome"
-                              tick={{ fontSize: 11, fill: 'var(--muted, #888)' }}
-                              angle={-35}
-                              textAnchor="end"
-                              interval={0}
-                            />
-                            <YAxis
-                              tick={{ fontSize: 11, fill: 'var(--muted, #888)' }}
-                              tickFormatter={v => `${v}%`}
-                              domain={[0, 100]}
-                            />
+                            <XAxis dataKey="nome" tick={{ fontSize: 11, fill: 'var(--muted, #888)' }} angle={-35} textAnchor="end" interval={0} />
+                            <YAxis tick={{ fontSize: 11, fill: 'var(--muted, #888)' }} tickFormatter={v => `${v}%`} domain={[0, 100]} />
                             <Tooltip content={<CustomTooltip />} />
                             <Bar dataKey="pct" radius={[4, 4, 0, 0]} maxBarSize={48}>
                               {chartData.map((entry, i) => (
@@ -181,7 +195,6 @@ export function Historico() {
                         </ResponsiveContainer>
                       </div>
 
-                      {/* Legenda de categorias */}
                       <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
                         {Object.entries(CAT_COLORS).map(([cat, cor]) => (
                           <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', opacity: 0.7 }}>
@@ -191,7 +204,6 @@ export function Historico() {
                         ))}
                       </div>
 
-                      {/* Tabela detalhe por pacote / pavimento */}
                       {CATEGORIAS.map(cat => {
                         const itensCat = pacotesAgrupados.filter(p => p.categoria === cat)
                         if (!itensCat.length) return null
@@ -202,10 +214,7 @@ export function Historico() {
                             </div>
                             {itensCat.map(pac => (
                               <div key={pac.pac_id} style={{ marginBottom: '12px', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
-                                <div style={{
-                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                  padding: '9px 14px', background: 'var(--surface, #f0ede8)',
-                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', background: 'var(--surface, #f0ede8)' }}>
                                   <span style={{ fontWeight: 700, fontSize: '13px' }}>{pac.pac_nome}</span>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <span style={{ fontSize: '12px', opacity: 0.55 }}>{fmt(pac.totalVal)}</span>
@@ -215,10 +224,7 @@ export function Historico() {
                                   </div>
                                 </div>
                                 {pac.pavimentos.map((d, i) => (
-                                  <div key={i} style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '6px 14px 6px 28px', borderTop: '1px solid var(--border)', fontSize: '12px',
-                                  }}>
+                                  <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 6px 28px', borderTop: '1px solid var(--border)', fontSize: '12px' }}>
                                     <span style={{ opacity: 0.65 }}>{d.pav_nome}</span>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                       <span style={{ opacity: 0.45 }}>{fmt(d.val)}</span>
